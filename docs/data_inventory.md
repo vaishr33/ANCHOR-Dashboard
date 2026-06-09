@@ -29,9 +29,11 @@ Track all public datasets used to build the Massachusetts recovery access and ov
 1. Massachusetts municipal boundaries
 2. Opioid-related overdose deaths by municipality
 3. Harm reduction / naloxone locations
-4. Peer recovery support centers
-5. SAMHSA treatment facilities
-6. SVI or ACS vulnerability data
+4. Syringe service program locations
+5. Peer recovery support centers
+6. SAMHSA treatment facilities
+7. SVI or ACS vulnerability data
+   
 
 ### Nice to Have
 
