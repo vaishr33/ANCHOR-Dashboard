@@ -12,7 +12,7 @@ Track all public datasets used to build the Massachusetts recovery access and ov
 
 | Dataset | Source | Use | Geography | Status | Notes |
 |---|---|---|---|---|---|
-| Massachusetts Municipal Boundaries | MassGIS | Base map and spatial joins | Municipality | Not downloaded | Needed first |
+| Massachusetts Municipal Boundaries | MassGIS | Base map and spatial joins | Municipality | Downloaded | Shapefile saved locally in data/raw/massgis_municipalities/ |
 | Opioid-related overdose deaths by city/town | Massachusetts DPH | Fatal overdose burden | Municipality | Not downloaded | Main burden dataset |
 | EMS opioid-related incidents | Massachusetts DPH / EMS dashboard | Nonfatal overdose burden proxy | Municipality or region | Not downloaded | Optional if downloadable |
 | Harm Reduction Program Locator | Mass.gov | Harm reduction and naloxone access | Point locations | Not downloaded | Includes programs, services, contact info |
