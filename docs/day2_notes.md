@@ -36,7 +36,7 @@
 * Created map-ready GeoJSON for dashboard mapping
 * Created quick static map preview in notebook
 * Created Top 20 recovery access gap towns table
-* Pushed notebook 2 changes to GitHub
+* Pushed notebook 2 and 3 changes to GitHub
 
 ## Created Processed Outputs
 
