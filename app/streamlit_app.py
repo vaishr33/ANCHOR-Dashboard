@@ -14,10 +14,19 @@ st.set_page_config(
     page_title="ANCHOR",
     layout="wide",
 )
-st.title("ANCHOR")
-
-st.caption(
-    "A Massachusetts dashboard mapping overdose burden, social vulnerability, and access to harm reduction and recovery supports."
+st.markdown(
+    """
+    <div style="line-height:1.15; margin-bottom:0.4rem;">
+        <span style="font-size:2.4rem; font-weight:700;">ANCHOR</span>
+        <span style="font-size:1rem; color:#9CA3AF; margin-left:0.75rem;">
+            Access to Naloxone, Care, Harm Reduction, Outreach, and Recovery
+        </span>
+    </div>
+    <div style="font-size:0.95rem; color:#9CA3AF; margin-bottom:0.5rem;">
+        Mapping overdose burden, social vulnerability, and access to harm reduction and recovery supports across Massachusetts.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 
@@ -43,7 +52,7 @@ def load_data():
     score_cols = [
         "social_vulnerability_pct",
         "final_priority_score",
-        "distance_adjusted_priority_score",
+        "anchor_priority_score",
         "recovery_access_gap_score",
         "nearest_any_service_distance_miles",
     ]
@@ -67,7 +76,7 @@ priority_df, priority_geo = load_data()
 st.sidebar.header("Filters")
 
 county_options = ["All"] + sorted(priority_df["COUNTY"].dropna().unique().tolist())
-priority_options = ["All"] + sorted(priority_df["priority_category"].dropna().unique().tolist())
+priority_options = ["All"] + sorted(priority_df["anchor_priority_level"].dropna().unique().tolist())
 gap_options = ["All"] + sorted(priority_df["gap_category"].dropna().unique().tolist())
 
 selected_county = st.sidebar.selectbox("County", county_options)
@@ -75,7 +84,7 @@ selected_priority = st.sidebar.selectbox("Priority level", priority_options)
 selected_gap = st.sidebar.selectbox("Access gap level", gap_options)
 
 max_priority_score = float(
-    pd.to_numeric(priority_df["distance_adjusted_priority_score"], errors="coerce").max()
+    pd.to_numeric(priority_df["anchor_priority_score"], errors="coerce").max()
 )
 
 min_priority_score = st.sidebar.slider(
@@ -92,13 +101,13 @@ if selected_county != "All":
     filtered_df = filtered_df[filtered_df["COUNTY"] == selected_county]
 
 if selected_priority != "All":
-    filtered_df = filtered_df[filtered_df["priority_category"] == selected_priority]
+    filtered_df = filtered_df[filtered_df["anchor_priority_level"] == selected_priority]
 
 if selected_gap != "All":
     filtered_df = filtered_df[filtered_df["gap_category"] == selected_gap]
 
 priority_score_filter = pd.to_numeric(
-    filtered_df["distance_adjusted_priority_score"],
+    filtered_df["anchor_priority_score"],
     errors="coerce",
 )
 
@@ -121,7 +130,7 @@ map_overview_tab, profile_tab, priority_tab, explorer_tab, methodology_tab = st.
         "Community Profile",
         "Top Communities",
         "Access Explorer",
-        "Methodology",
+        "Terms & Definitions",
     ]
 )
 
@@ -151,18 +160,18 @@ with map_overview_tab:
         st.stop()
     map_df = map_df.to_crs("EPSG:4326")
 
-    map_df["distance_adjusted_priority_score"] = pd.to_numeric(
-        map_df["distance_adjusted_priority_score"],
+    map_df["anchor_priority_score"] = pd.to_numeric(
+        map_df["anchor_priority_score"],
         errors="coerce",
     )
     map_df.loc[
-        map_df["distance_adjusted_priority_score"] < 0,
-        "distance_adjusted_priority_score",
+        map_df["anchor_priority_score"] < 0,
+        "anchor_priority_score",
     ] = np.nan
 
     map_df = map_df.rename(
         columns={
-            "distance_adjusted_priority_score": "Priority Score",
+            "anchor_priority_score": "Priority Score",
             "final_priority_score": "Original Priority Score",
             "recovery_access_gap_score": "Access Gap Score",
             "social_vulnerability_pct": "Social Vulnerability",
@@ -173,7 +182,7 @@ with map_overview_tab:
             "service_diversity_score": "Service Types Inside Municipality",
             "avg_deaths_2021_2023": "Avg Annual Overdose Deaths",
             "avg_ems_incidents_2022_2023": "Avg Annual EMS Incidents",
-            "priority_category": "Priority Level",
+            "anchor_priority_level": "Priority Level",
             "gap_category": "Access Gap Level",
             "COUNTY": "County",
             "TOWN": "Municipality",
@@ -206,23 +215,10 @@ with map_overview_tab:
         zoom=6.7,
         opacity=0.8,
         color_continuous_scale="YlOrRd",
-        max_priority_score = float(map_df["Priority Score"].max())
-        labels={
-            "Priority Score": "Priority Score",
-            "County": "County",
-            "Priority Level": "Priority Level",
-            "Access Gap Level": "Access Gap Level",
-            "Access Gap Score": "Access Gap Score",
-            "Social Vulnerability": "Social Vulnerability",
-            "Nearest Listed Service (miles)": "Nearest Listed Service (miles)",
-            "Listed Services Within 5 Miles": "Listed Services Within 5 Miles",
-            "Listed Services Within 10 Miles": "Listed Services Within 10 Miles",
-            "Service Types Within 5 Miles": "Service Types Within 5 Miles",
-            "Service Types Inside Municipality": "Service Types Inside Municipality",
-            "Avg Annual Overdose Deaths": "Avg Annual Overdose Deaths",
-            "Avg Annual EMS Incidents": "Avg Annual EMS Incidents",
-        },
         range_color=(0, map_df["Priority Score"].max()),
+        labels={
+            "Priority Score": "ANCHOR Priority Score",
+        },
     )
     
 
@@ -242,10 +238,10 @@ with map_overview_tab:
     st.subheader("Dashboard summary")
 
     total_municipalities = len(filtered_df)
-    very_high_priority = (filtered_df["priority_category"] == "Very high priority").sum()
+    very_high_priority = (filtered_df["anchor_priority_level"] == "Very high priority").sum()
     no_tracked_services = (filtered_df["service_diversity_score"] == 0).sum()
     no_services_10mi = (filtered_df["services_within_10_miles"] == 0).sum()
-    median_priority_score = filtered_df["distance_adjusted_priority_score"].median()
+    median_priority_score = filtered_df["anchor_priority_score"].median()
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -329,7 +325,7 @@ with profile_tab:
 
         st.markdown(
             f"""
-            **Priority level:** `{profile['priority_category']}`  
+            **Priority level:** `{profile['anchor_priority_level']}`  
             **Access gap level:** `{profile['gap_category']}`  
             **Nearest listed service:** `{profile['nearest_any_service_distance_miles']:.1f} miles`  
             **In-town service types:** `{int(profile['service_diversity_score'])}/4`
@@ -337,7 +333,7 @@ with profile_tab:
         )
 
     with right:
-        st.metric("Priority score", f"{profile['distance_adjusted_priority_score']:.2f}")
+        st.metric("Priority score", f"{profile['anchor_priority_score']:.2f}")
         st.caption(
             "Higher scores suggest greater need for closer review based on burden, vulnerability, and access."
         )
@@ -406,8 +402,8 @@ with profile_tab:
                     "Nearest harm reduction listing",
                 ],
                 "Value": [
-                    f"{profile['distance_adjusted_priority_score']:.2f}",
-                    profile["priority_category"],
+                    f"{profile['anchor_priority_score']:.2f}",
+                    profile["anchor_priority_level"],
                     profile["gap_category"],
                     f"{profile['recovery_access_gap_score']:.2f}",
                     f"{profile['social_vulnerability_pct']:.2f}",
@@ -449,15 +445,15 @@ with priority_tab:
         ]
 
     top_df = top_df.sort_values(
-        "distance_adjusted_priority_score",
+        "anchor_priority_score",
         ascending=False,
     ).copy()
 
     display_top = top_df[[
         "TOWN",
         "COUNTY",
-        "priority_category",
-        "distance_adjusted_priority_score",
+        "anchor_priority_level",
+        "anchor_priority_score",
         "nearest_any_service_distance_miles",
         "services_within_5_miles",
         "services_within_10_miles",
@@ -469,8 +465,8 @@ with priority_tab:
         columns={
             "TOWN": "Municipality",
             "COUNTY": "County",
-            "priority_category": "Priority Level",
-            "distance_adjusted_priority_score": "Priority Score",
+            "anchor_priority_level": "Priority Level",
+            "anchor_priority_score": "Priority Score",
             "nearest_any_service_distance_miles": "Nearest Listed Service (mi)",
             "services_within_5_miles": "Services Within 5 mi",
             "services_within_10_miles": "Services Within 10 mi",
@@ -484,6 +480,20 @@ with priority_tab:
     if display_top.empty:
         st.warning("No municipalities match the current filters or search.")
     else:
+        priority_order = [
+            "Very high priority",
+            "High priority",
+            "Moderate priority",
+            "Lower priority",
+        ]
+
+        priority_color_map = {
+            "Very high priority": "#8B0000",
+            "High priority": "#E4572E",
+            "Moderate priority": "#F3A712",
+            "Lower priority": "#4C78A8",
+        }
+
         chart_df = display_top.head(20).sort_values("Priority Score", ascending=True)
 
         fig_bar = px.bar(
@@ -492,6 +502,11 @@ with priority_tab:
             y="Municipality",
             orientation="h",
             color="Priority Level",
+            color_discrete_map=priority_color_map,
+            category_orders={
+                "Priority Level": priority_order,
+                "Municipality": chart_df["Municipality"].tolist(),
+            },
             hover_data=[
                 "County",
                 "Nearest Listed Service (mi)",
@@ -500,6 +515,20 @@ with priority_tab:
                 "Social Vulnerability",
             ],
             title="Top 20 Municipalities by Priority Score",
+        )
+
+        fig_bar.update_layout(
+            height=650,
+            yaxis_title="",
+            xaxis_title="Priority Score",
+            margin={"r": 20, "t": 50, "l": 20, "b": 20},
+            legend_title_text="Priority Level",
+            legend_traceorder="normal",
+        )
+
+        fig_bar.update_yaxes(
+            categoryorder="array",
+            categoryarray=chart_df["Municipality"].tolist(),
         )
 
         fig_bar.update_layout(
@@ -539,7 +568,7 @@ with explorer_tab:
     scatter_cols = [
         "recovery_access_gap_score",
         "social_vulnerability_pct",
-        "distance_adjusted_priority_score",
+        "anchor_priority_score",
     ]
 
     for col in scatter_cols:
@@ -552,9 +581,9 @@ with explorer_tab:
         scatter_df,
         x="recovery_access_gap_score",
         y="social_vulnerability_pct",
-        size="distance_adjusted_priority_score",
+        size="anchor_priority_score",
         size_max=35,
-        color="priority_category",
+        color="anchor_priority_level",
         hover_name="TOWN",
         hover_data={
             "COUNTY": True,
@@ -563,13 +592,13 @@ with explorer_tab:
             "nearest_any_service_distance_miles": ":.2f",
             "services_within_5_miles": True,
             "services_within_10_miles": True,
-            "distance_adjusted_priority_score": ":.3f",
+            "anchor_priority_score": ":.3f",
         },
         labels={
             "recovery_access_gap_score": "Recovery Access Gap Score",
             "social_vulnerability_pct": "Social Vulnerability",
-            "distance_adjusted_priority_score": "Priority Score",
-            "priority_category": "Priority Level",
+            "anchor_priority_score": "Priority Score",
+            "anchor_priority_level": "Priority Level",
             "COUNTY": "County",
             "avg_deaths_2021_2023": "Avg Annual Overdose Deaths",
             "avg_ems_incidents_2022_2023": "Avg Annual EMS Incidents",
@@ -608,7 +637,7 @@ with explorer_tab:
         "services_within_5_miles",
         "services_within_10_miles",
         "service_types_within_5_miles",
-        "distance_adjusted_priority_score",
+        "anchor_priority_score",
     ]].rename(
         columns={
             "TOWN": "Municipality",
@@ -617,47 +646,154 @@ with explorer_tab:
             "services_within_5_miles": "Services Within 5 mi",
             "services_within_10_miles": "Services Within 10 mi",
             "service_types_within_5_miles": "Service Types Within 5 mi",
-            "distance_adjusted_priority_score": "Priority Score",
+            "anchor_priority_score": "Priority Score",
         }
     ).sort_values("Nearest Listed Service (mi)")
 
-    st.dataframe(access_table, use_container_width=True, hide_index=True)
+    with st.expander("View municipalities in this group"):
+        st.dataframe(access_table, use_container_width=True, hide_index=True)
 
 
 # -----------------------------
-# Methodology tab
+# Terms & definitions tab
+# -----------------------------
+# -----------------------------
+# Terms & score guide tab
 # -----------------------------
 with methodology_tab:
-    st.subheader("Definitions and Methodology")
+    st.subheader("Terms & Score Guide")
 
     st.markdown(
         """
-        ### Key terms
+        This section explains the main terms used in ANCHOR and how the final
+        **ANCHOR Priority Score** is created.
+        """
+    )
 
-        **Municipality**  
-        A city or town in Massachusetts. Each row in the dashboard represents one municipality.
+    st.info(
+        "The ANCHOR Priority Score is a relative ranking tool. Higher scores suggest communities that may warrant closer review.",
+        icon="ℹ️",
+    )
 
-        **Source-listed recovery services**  
-        Service access indicators are based on public source-listed records collected from SAMHSA and Mass.gov datasets.
+    st.markdown("### What goes into the ANCHOR Priority Score?")
 
-        Tracked service categories include:
+    st.markdown(
+        """
+        The score is built from three main pieces:
 
-        - SAMHSA treatment facilities
-        - Peer recovery centers
-        - Syringe service programs
-        - Harm reduction program listings
+        1. **Access Gap**  
+           Measures where overdose burden is high but in-town harm reduction and recovery support listings are limited.
 
-        **In-town service types**  
-        The number of tracked service categories listed inside a municipality, from 0 to 4.
+        2. **Social Vulnerability**  
+           Uses CDC/ATSDR Social Vulnerability Index data to adjust the score upward for communities with higher structural vulnerability.
 
-        **Distance-based access**  
-        Distance metrics estimate how close each municipality is to source-listed services. Service locations are represented using ZIP-code centroids, so these are approximate access measures.
+        3. **Distance Access**  
+           Adjusts the score downward when a municipality has nearby source-listed services within approximately 5 miles, even if those services are outside the municipal boundary.
+        """
+    )
 
-        **Priority Score**  
-        The main dashboard score. It combines opioid-related burden, social vulnerability, source-listed service access, and nearby distance-based access.
+    st.markdown("### Score breakdown")
 
-        ### Important interpretation note
+    st.markdown("#### 1. Access Gap Score")
 
-        This dashboard is a prioritization and exploration tool. It does not prove that a municipality has no services, nor does it measure service capacity, quality, eligibility, waitlists, transportation barriers, or real travel time.
+    st.markdown(
+        """
+        The Access Gap Score starts with overdose burden and compares it with in-town service access.
+        """
+    )
+
+    st.latex(
+        r"""
+        \text{Access Gap Score}
+        =
+        \text{Overdose Burden}
+        \times
+        (1 - \text{In-Town Service Access})
+        """
+    )
+
+    st.markdown(
+        """
+        **Overdose burden** combines overdose deaths and opioid-related EMS incidents.  
+        **In-town service access** is based on how many tracked service categories are listed inside the municipality.
+        """
+    )
+
+    st.markdown("#### 2. SVI-Adjusted Score")
+
+    st.markdown(
+        """
+        The Access Gap Score is then adjusted using social vulnerability.
+        """
+    )
+
+    st.latex(
+        r"""
+        \text{SVI-Adjusted Score}
+        =
+        \text{Access Gap Score}
+        \times
+        (1 + \text{Social Vulnerability})
+        """
+    )
+
+    st.markdown(
+        """
+        This increases the score for municipalities with higher social vulnerability.
+        """
+    )
+
+    st.markdown("#### 3. ANCHOR Priority Score")
+
+    st.markdown(
+        """
+        Finally, the score is adjusted for nearby service access.
+        """
+    )
+
+    st.latex(
+        r"""
+        \text{ANCHOR Priority Score}
+        =
+        \text{SVI-Adjusted Score}
+        \times
+        (1 - 0.35 \times \text{Nearby Access})
+        """
+    )
+
+    st.markdown(
+    """
+    The **0.35 nearby-access weight** means nearby services can reduce the score by up to 35%,
+    but they cannot erase it. Nearby services may improve access, but they do not fully account
+    for transportation barriers, eligibility, hours, capacity, stigma, or whether people can
+    realistically use those services.
+    """
+)
+
+    st.markdown("### Priority levels")
+
+    st.markdown(
+        """
+        Priority levels are based on the final ANCHOR Priority Score:
+
+        - **Very high priority:** top 10% of municipalities
+        - **High priority:** 75th to 90th percentile
+        - **Moderate priority:** 50th to 75th percentile
+        - **Lower priority:** below the 50th percentile
+        """
+    )
+
+    st.markdown("### Important note")
+
+    st.warning(
+        "Zero in-town listings does not mean a municipality has no services. "
+        "It means no source-listed records from the tracked datasets were identified inside that municipality.",
+        icon="⚠️",
+    )
+
+    st.markdown(
+        """
+        ANCHOR uses source-listed service records, approximate ZIP-code centroid distances, overdose death data,
+        EMS incident data, and social vulnerability data. It should be used to guide further review, not as a complete service inventory.
         """
     )
