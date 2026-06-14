@@ -70,6 +70,48 @@ def load_data():
 
 
 priority_df, priority_geo = load_data()
+# Compatibility fix: older processed data may not have ANCHOR public-facing columns yet.
+# Create them from existing priority score columns if missing.
+
+if "anchor_priority_score" not in priority_df.columns:
+    if "distance_adjusted_priority_score" in priority_df.columns:
+        priority_df["anchor_priority_score"] = pd.to_numeric(
+            priority_df["distance_adjusted_priority_score"],
+            errors="coerce"
+        )
+    elif "final_priority_score" in priority_df.columns:
+        priority_df["anchor_priority_score"] = pd.to_numeric(
+            priority_df["final_priority_score"],
+            errors="coerce"
+        )
+    else:
+        priority_df["anchor_priority_score"] = 0
+
+if (
+    "anchor_priority_level" not in priority_df.columns
+    or priority_df["anchor_priority_level"].isna().any()
+):
+    score = pd.to_numeric(priority_df["anchor_priority_score"], errors="coerce")
+
+    q50 = score.quantile(0.50)
+    q75 = score.quantile(0.75)
+    q90 = score.quantile(0.90)
+
+    def assign_anchor_priority_level(value):
+        if pd.isna(value):
+            return "Lower priority"
+        if value >= q90:
+            return "Very high priority"
+        if value >= q75:
+            return "High priority"
+        if value >= q50:
+            return "Moderate priority"
+        return "Lower priority"
+
+    priority_df["anchor_priority_level"] = score.apply(assign_anchor_priority_level)
+
+if "access_gap_level" not in priority_df.columns and "gap_category" in priority_df.columns:
+    priority_df["access_gap_level"] = priority_df["gap_category"]
 # -----------------------------
 # Global filters
 # -----------------------------
@@ -145,158 +187,155 @@ map_overview_tab, profile_tab, priority_tab, explorer_tab, methodology_tab = st.
 # Map overview tab
 # -----------------------------
 with map_overview_tab:
-    st.subheader("Massachusetts Recovery Access Priority Map")
+        st.subheader("Massachusetts Recovery Access Priority Map")
 
-    st.markdown(
-        """
-        This map highlights Massachusetts municipalities where opioid-related burden,
-        social vulnerability, and recovery access gaps may warrant closer attention.
-        """
-    )
+        st.markdown(
+            """
+            This map highlights Massachusetts municipalities where opioid-related burden,
+            social vulnerability, and recovery access gaps may warrant closer attention.
+            """
+        )
 
-    map_df = filtered_geo.copy()
-    if map_df.empty:
-        st.warning("No municipalities match the selected filters. Reset filters in the sidebar to show the map.")
-        st.stop()
-    map_df = map_df.to_crs("EPSG:4326")
+        map_df = filtered_geo.copy()
+        if map_df.empty:
+            st.warning("No municipalities match the selected filters. Reset filters in the sidebar to show the map.")
+            st.stop()
+        map_df = map_df.to_crs("EPSG:4326")
+        
 
-    map_df["anchor_priority_score"] = pd.to_numeric(
-        map_df["anchor_priority_score"],
-        errors="coerce",
-    )
-    map_df.loc[
-        map_df["anchor_priority_score"] < 0,
-        "anchor_priority_score",
-    ] = np.nan
+        map_df["anchor_priority_score"] = pd.to_numeric(
+            map_df["anchor_priority_score"],
+            errors="coerce",
+        )
+        map_df.loc[
+            map_df["anchor_priority_score"] < 0,
+            "anchor_priority_score",
+        ] = np.nan
 
-    map_df = map_df.rename(
-        columns={
-            "anchor_priority_score": "Priority Score",
-            "final_priority_score": "Original Priority Score",
-            "recovery_access_gap_score": "Access Gap Score",
-            "social_vulnerability_pct": "Social Vulnerability",
-            "nearest_any_service_distance_miles": "Nearest Listed Service (miles)",
-            "services_within_5_miles": "Listed Services Within 5 Miles",
-            "services_within_10_miles": "Listed Services Within 10 Miles",
-            "service_types_within_5_miles": "Service Types Within 5 Miles",
-            "service_diversity_score": "Service Types Inside Municipality",
-            "avg_deaths_2021_2023": "Avg Annual Overdose Deaths",
-            "avg_ems_incidents_2022_2023": "Avg Annual EMS Incidents",
-            "anchor_priority_level": "Priority Level",
-            "gap_category": "Access Gap Level",
-            "COUNTY": "County",
-            "TOWN": "Municipality",
-        }
-    )
+        map_df = map_df.rename(
+            columns={
+                "anchor_priority_score": "Priority Score",
+                "final_priority_score": "Original Priority Score",
+                "recovery_access_gap_score": "Access Gap Score",
+                "social_vulnerability_pct": "Social Vulnerability",
+                "nearest_any_service_distance_miles": "Nearest Listed Service (miles)",
+                "services_within_5_miles": "Listed Services Within 5 Miles",
+                "services_within_10_miles": "Listed Services Within 10 Miles",
+                "service_types_within_5_miles": "Service Types Within 5 Miles",
+                "service_diversity_score": "Service Types Inside Municipality",
+                "avg_deaths_2021_2023": "Avg Annual Overdose Deaths",
+                "avg_ems_incidents_2022_2023": "Avg Annual EMS Incidents",
+                "anchor_priority_level": "Priority Level",
+                "gap_category": "Access Gap Level",
+                "COUNTY": "County",
+                "TOWN": "Municipality",
+            }
+        )
 
-    fig_map = px.choropleth_mapbox(
-        map_df,
-        geojson=map_df.__geo_interface__,
-        locations=map_df.index,
-        color="Priority Score",
-        hover_name="Municipality",
-        hover_data={
-            "County": True,
-            "Priority Level": True,
-            "Access Gap Level": True,
-            "Priority Score": ":.2f",
-            "Access Gap Score": ":.2f",
-            "Social Vulnerability": ":.2f",
-            "Nearest Listed Service (miles)": ":.1f",
-            "Listed Services Within 5 Miles": True,
-            "Listed Services Within 10 Miles": True,
-            "Service Types Within 5 Miles": True,
-            "Service Types Inside Municipality": True,
-            "Avg Annual Overdose Deaths": ":.1f",
-            "Avg Annual EMS Incidents": ":.1f",
-        },
-        mapbox_style="carto-positron",
-        center={"lat": 42.25, "lon": -71.8},
-        zoom=6.7,
-        opacity=0.8,
-        color_continuous_scale="YlOrRd",
-        range_color=(0, map_df["Priority Score"].max()),
-        labels={
-            "Priority Score": "ANCHOR Priority Score",
-        },
-    )
-    
+        fig_map = px.choropleth_mapbox(
+            map_df,
+            geojson=map_df.__geo_interface__,
+            locations=map_df.index,
+            color="Priority Score",
+            hover_name="Municipality",
+            hover_data={
+                "County": True,
+                "Priority Level": True,
+                "Access Gap Level": True,
+                "Priority Score": ":.2f",
+                "Access Gap Score": ":.2f",
+                "Social Vulnerability": ":.2f",
+                "Nearest Listed Service (miles)": ":.1f",
+                "Listed Services Within 5 Miles": True,
+                "Listed Services Within 10 Miles": True,
+                "Service Types Within 5 Miles": True,
+                "Service Types Inside Municipality": True,
+                "Avg Annual Overdose Deaths": ":.1f",
+                "Avg Annual EMS Incidents": ":.1f",
+            },
+            mapbox_style="carto-positron",
+            center={"lat": 42.25, "lon": -71.8},
+            zoom=6.7,
+            opacity=0.8,
+            color_continuous_scale="YlOrRd",
+            range_color=(0, map_df["Priority Score"].max()),
+            labels={
+                "Priority Score": "ANCHOR Priority Score",
+            },
+        )
+        
 
-    fig_map.update_layout(
-        height=750,
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    )
+        fig_map.update_layout(
+            height=750,
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+        )
 
-    fig_map.update_traces(
-        marker_line_width=0.35,
-        marker_line_color="white",
-    )
+        fig_map.update_traces(
+            marker_line_width=0.35,
+            marker_line_color="white",
+        )
 
-    st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, use_container_width=True)
 
-    st.divider()
-    st.subheader("Dashboard summary")
+        st.divider()
+        st.subheader("Dashboard summary")
 
-    total_municipalities = len(filtered_df)
-    very_high_priority = (filtered_df["anchor_priority_level"] == "Very high priority").sum()
-    no_tracked_services = (filtered_df["service_diversity_score"] == 0).sum()
-    no_services_10mi = (filtered_df["services_within_10_miles"] == 0).sum()
-    median_priority_score = filtered_df["anchor_priority_score"].median()
+        total_municipalities = len(filtered_df)
+        very_high_priority = (filtered_df["anchor_priority_level"] == "Very high priority").sum()
+        no_tracked_services = (filtered_df["service_diversity_score"] == 0).sum()
+        no_services_10mi = (filtered_df["services_within_10_miles"] == 0).sum()
+        median_priority_score = filtered_df["anchor_priority_score"].median()
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4, col5 = st.columns(5)
 
-    with col1:
-        st.metric("Municipalities shown", f"{total_municipalities:,}")
-        with st.popover("What does this mean?"):
-            st.write(
-                "The dashboard shows Massachusetts municipalities included in the current filters. "
-                "Each row represents one city or town."
-            )
+        with col1:
+            st.metric("Municipalities shown", f"{total_municipalities:,}")
+            with st.popover("What does this mean?"):
+                st.write(
+                    "The dashboard shows Massachusetts municipalities included in the current filters. "
+                    "Each row represents one city or town."
+                )
 
-    with col2:
-        st.metric("Very high priority", f"{very_high_priority:,}")
-        with st.popover("What does this mean?"):
-            st.write(
-                "Municipalities with the highest combined priority based on overdose burden, "
-                "social vulnerability, and access to source-listed supports."
-            )
+        with col2:
+            st.metric("Very high priority", f"{very_high_priority:,}")
+            with st.popover("What does this mean?"):
+                st.write(
+                    "Municipalities with the highest combined priority based on overdose burden, "
+                    "social vulnerability, and access to source-listed supports."
+                )
 
-    with col3:
-        st.metric("No in-town listings", f"{no_tracked_services:,}")
-        with st.popover("What does this mean?"):
-            st.write(
-                "Municipalities with zero tracked source-listed service categories located inside the municipality. "
-                "This does not mean no support exists locally."
-            )
+        with col3:
+            st.metric("No in-town listings", f"{no_tracked_services:,}")
+            with st.popover("What does this mean?"):
+                st.write(
+                    "Municipalities with zero tracked source-listed service categories located inside the municipality. "
+                    "This does not mean no support exists locally."
+                )
 
-    with col4:
-        st.metric("No services within 10 mi", f"{no_services_10mi:,}")
-        with st.popover("What does this mean?"):
-            st.write(
-                "Municipalities with no source-listed service records within approximately 10 miles, "
-                "using ZIP-code centroid distance estimates."
-            )
+        with col4:
+            st.metric("No services within 10 mi", f"{no_services_10mi:,}")
+            with st.popover("What does this mean?"):
+                st.write(
+                    "Municipalities with no source-listed service records within approximately 10 miles, "
+                    "using ZIP-code centroid distance estimates."
+                )
 
-    with col5:
-        st.metric("Median priority score", f"{median_priority_score:.2f}")
-        with st.popover("What does this mean?"):
-            st.write(
-                "The middle priority score among municipalities currently shown after filters are applied."
-            )
+        with col5:
+            st.metric("Median priority score", f"{median_priority_score:.2f}")
+            with st.popover("What does this mean?"):
+                st.write(
+                    "The middle priority score among municipalities currently shown after filters are applied."
+                )
 
-st.caption(
-    "Tracked services are source-listed records from SAMHSA and Mass.gov datasets. "
-    "Distance metrics are approximate and use ZIP-code centroids for service locations."
-)
+        st.caption(
+            "Tracked services are source-listed records from SAMHSA and Mass.gov datasets. "
+            "Distance metrics are approximate and use ZIP-code centroids for service locations."
+        )
 
 # -----------------------------
 # Community profile tab
 # -----------------------------
 with profile_tab:
-    # -----------------------------
-# Community profile tab
-# -----------------------------
- with profile_tab:
     st.subheader("Community Profile")
 
     st.markdown(
