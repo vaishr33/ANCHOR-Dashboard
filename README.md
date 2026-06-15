@@ -1,12 +1,14 @@
 # ANCHOR: Massachusetts Harm Reduction Access & Overdose Burden Dashboard
 
+**Live dashboard:** https://anchor-ma-dashboard.streamlit.app/
+
 **ANCHOR** stands for **Access to Naloxone, Care, Harm Reduction, Outreach, and Recovery**.
 
-ANCHOR is a Massachusetts municipality-level public health dashboard that explores where overdose burden, social vulnerability, and limited access to harm reduction and recovery support services may overlap.
+ANCHOR is a Massachusetts municipality-level public health dashboard that explores where overdose burden, social vulnerability, and limited **source-listed** harm reduction and recovery support visibility may overlap.
 
-The project is designed to help identify communities that may warrant closer review for outreach planning, harm reduction expansion, naloxone access, service gap analysis, and public health resource prioritization.
+The dashboard is designed as an exploratory planning and portfolio project. It brings together overdose burden, EMS burden, social vulnerability, in-town service listings, and nearby service access indicators to help identify communities that may warrant closer review for outreach planning, naloxone access, harm reduction expansion, service gap analysis, and public health resource prioritization.
 
-**Live dashboard:** https://anchor-ma-dashboard.streamlit.app/
+ANCHOR should not be interpreted as a definitive service inventory, clinical tool, or policy decision engine.
 
 ---
 
@@ -14,27 +16,35 @@ The project is designed to help identify communities that may warrant closer rev
 
 This project asks:
 
-> Where in Massachusetts do overdose burden, social vulnerability, and limited access to harm reduction supports overlap?
+> Where in Massachusetts do overdose burden, social vulnerability, and limited source-listed harm reduction supports overlap?
 
-ANCHOR combines municipality-level overdose burden, EMS burden, social vulnerability, in-town service access, and nearby service access into an exploratory dashboard.
+ANCHOR combines municipality-level public health and access indicators into a Streamlit dashboard that allows users to explore:
 
-The dashboard is intended as a public health portfolio project and exploratory planning tool. It should not be interpreted as a definitive service inventory, clinical tool, or policy decision engine.
+* overdose burden
+* EMS burden
+* social vulnerability
+* in-town service listings
+* nearby service access
+* distance to listed services
+* municipality-level priority rankings
+
+The goal is not to claim that a municipality definitively has or does not have services. Instead, ANCHOR highlights where publicly available, structured datasets suggest possible access, visibility, or service-listing gaps that may deserve further review.
 
 ---
 
 ## Why This Matters
 
-Overdose risk and service access are not evenly distributed across communities. A municipality may experience high overdose burden while also facing social vulnerability, limited in-town service listings, or distance barriers to nearby support.
+Overdose risk and service access are not evenly distributed across communities. A municipality may experience high overdose burden while also facing social vulnerability, limited source-listed services, or distance barriers to nearby support.
 
-ANCHOR helps make those overlaps easier to see by bringing multiple public health indicators into one municipality-level view.
+ANCHOR helps make these overlaps easier to see by combining multiple public health indicators into one municipality-level view.
 
-The project emphasizes harm reduction access, overdose burden, and practical service visibility rather than treating “access” as a simple yes/no measure.
+The project emphasizes harm reduction access, overdose burden, naloxone access, recovery support visibility, and practical service discoverability rather than treating “access” as a simple yes/no measure.
 
 ---
 
 ## Dashboard Features
 
-The Streamlit dashboard includes five main sections:
+The Streamlit dashboard includes five main sections.
 
 ### Map Overview
 
@@ -43,14 +53,14 @@ An interactive Massachusetts municipality map showing ANCHOR Priority Score and 
 The map includes hover details such as:
 
 * ANCHOR Priority Score
-* Priority level
-* Harm reduction access gap level
-* Nearest listed service
-* Services within 5 miles
-* Services within 10 miles
-* Social vulnerability
-* Average overdose deaths
-* Average EMS incidents
+* priority level
+* harm reduction access gap level
+* nearest listed service
+* services within 5 miles
+* services within 10 miles
+* social vulnerability
+* average overdose deaths
+* average EMS incidents
 
 ### Community Profile
 
@@ -62,7 +72,7 @@ A ranked list of municipalities by ANCHOR Priority Score, with searchable table 
 
 ### Access Explorer
 
-A scatterplot comparing harm reduction access gap and social vulnerability.
+A scatterplot comparing harm reduction access gap and social vulnerability across municipalities.
 
 ### Terms & Score Guide
 
@@ -84,13 +94,13 @@ Uses average annual EMS incidents from 2022–2023.
 
 Uses CDC/ATSDR Social Vulnerability Index tract-level data aggregated to municipalities.
 
-The primary field used is the overall SVI ranking field:
+The primary SVI field used is the overall SVI ranking field:
 
 ```text
 RPL_THEMES
 ```
 
-This value should range from `0` to `1`.
+This value ranges from `0` to `1`, where higher values indicate greater relative social vulnerability.
 
 ### In-Town Service Access
 
@@ -98,24 +108,24 @@ Tracks whether source-listed services appear within a municipality.
 
 Tracked service categories include:
 
-* Treatment facilities
-* Peer recovery centers
-* Syringe service programs
-* Harm reduction program listings
+* treatment facilities
+* peer recovery centers
+* syringe service programs
+* harm reduction program listings
 
-A municipality with zero tracked in-town listings should not be interpreted as having no services. It means no services from the tracked source-listed categories were identified inside that municipality.
+A municipality with zero tracked in-town listings should not be interpreted as having no services. It means no services from the tracked source-listed categories were identified inside that municipality in the datasets used for this project.
 
 ### Nearby Service Access
 
 Nearby service access is included because a municipality may not have an in-town listing but may still be close to services in nearby municipalities.
 
-Distance metrics include:
+Distance-based metrics include:
 
-* Nearest listed service distance
-* Services within 5 miles
-* Services within 10 miles
-* Service types within 5 miles
-* Service types within 10 miles
+* nearest listed service distance
+* services within 5 miles
+* services within 10 miles
+* service types within 5 miles
+* service types within 10 miles
 
 Distance estimates are approximate and should not be interpreted as travel time.
 
@@ -172,9 +182,9 @@ This project uses publicly available and source-listed datasets, including:
 * Massachusetts EMS incident data
 * CDC/ATSDR Social Vulnerability Index
 * SAMHSA treatment locator data
-* Peer recovery, syringe service, and harm reduction resource listings
+* peer recovery, syringe service, and harm reduction resource listings
 
-Service data is source-listed and should not be interpreted as a complete operational inventory of all services in Massachusetts.
+Service data is source-listed and should not be interpreted as a complete operational inventory of all harm reduction, treatment, recovery, or naloxone-related services in Massachusetts.
 
 ---
 
@@ -224,8 +234,8 @@ Before deployment, the final dashboard data was checked for:
 * consistent municipality ranking and priority labels
 * valid Boston and Yarmouth profile values
 * non-negative distance metrics
-* consistent service count and service flag fields
-* map, profile, top communities, and explorer tabs rendering correctly
+* consistent service count, service type, and nearest-distance fields
+* map, profile, top communities, explorer, and terms tabs rendering correctly
 
 ---
 
@@ -237,8 +247,10 @@ Important limitations:
 
 * Service listings are not a complete service inventory.
 * Zero tracked in-town listings does not mean a municipality has no services.
+* Some organizations may exist locally but not appear in the structured datasets used here.
+* Services may be listed under parent organizations, nearby municipalities, or categories outside this project’s tracked service types.
 * Distance calculations are approximate.
-* Distance does not capture transportation access, appointment availability, service capacity, or service fit.
+* Distance does not capture transportation access, appointment availability, service capacity, eligibility, service hours, language access, or service fit.
 * Municipality-level analysis can hide neighborhood-level variation.
 * The score is intended for prioritization and exploration, not final policy determination.
 
@@ -267,32 +279,11 @@ project-root/
 ├── docs/
 │   ├── day1_notes.md
 │   ├── day2_notes.md
-│   └── day3_notes.md
+│   ├── day3_notes.md
+│   └── day4_notes.md
 │
 ├── README.md
 └── pyproject.toml
-```
-
----
-
-## Run Locally
-
-From the project root:
-
-```powershell
-uv run streamlit run app/streamlit_app.py
-```
-
-Clear Streamlit cache:
-
-```powershell
-uv run streamlit cache clear
-```
-
-Check app syntax:
-
-```powershell
-uv run python -m py_compile app/streamlit_app.py
 ```
 
 ---
@@ -311,15 +302,19 @@ uv run python -m py_compile app/streamlit_app.py
 
 ---
 
+## Future Improvements
+
 Potential future improvements include:
 
 * more complete service inventory validation
 * public transit access metrics
 * travel-time based distance estimates
-* additional harm reduction resource categories
+* additional harm reduction and naloxone resource categories
 * longitudinal overdose burden trends
 * neighborhood or tract-level drilldowns
 * service capacity and hours-of-operation indicators
+* verified service source links
+* clearer distinction between treatment, recovery, harm reduction, and naloxone access resources
 
 ---
 
@@ -327,4 +322,4 @@ Potential future improvements include:
 
 ANCHOR is harm reduction oriented.
 
-The project focuses on overdose burden, social vulnerability, harm reduction access, naloxone access, and recovery support visibility across Massachusetts municipalities.
+The project focuses on overdose burden, social vulnerability, harm reduction access, naloxone access, recovery support visibility, and public service-listing gaps across Massachusetts municipalities.
