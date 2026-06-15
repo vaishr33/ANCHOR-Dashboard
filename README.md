@@ -6,7 +6,7 @@ ANCHOR is a Massachusetts municipality-level public health dashboard that explor
 
 The project is designed to help identify communities that may warrant closer review for outreach planning, harm reduction expansion, naloxone access, service gap analysis, and public health resource prioritization.
 
-**Live dashboard:** Coming soon
+**Live dashboard:** https://anchor-ma-dashboard.streamlit.app/
 
 ---
 
